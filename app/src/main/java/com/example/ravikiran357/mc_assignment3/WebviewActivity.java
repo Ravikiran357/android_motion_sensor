@@ -5,10 +5,12 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.CheckBox;
 import android.widget.TextView;
 
 import java.util.Arrays;
@@ -16,6 +18,8 @@ import java.util.Arrays;
 public class WebviewActivity extends AppCompatActivity {
 
     SQLiteDatabase db;
+    WebView webview;
+    CheckBox checkRun, checkWalk, checkEat;
     private String[][] walkingArray, runningArray, eatingArray;
 
     @Override
@@ -28,10 +32,10 @@ public class WebviewActivity extends AppCompatActivity {
         if (bundle != null) {
             accuracy = bundle.getFloat("currentAccuracy");
         }
-        TextView accuracyTextView = findViewById(R.id.accuracyTextView2);
+        TextView accuracyTextView = findViewById(R.id.accuracyPageTextView);
         accuracyTextView.setText("Accuracy = " + accuracy + " %");
 
-        final WebView webview = findViewById(R.id.webview);
+        webview = findViewById(R.id.webview);
         WebSettings webSettings = webview.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setBuiltInZoomControls(true);
@@ -42,19 +46,49 @@ public class WebviewActivity extends AppCompatActivity {
         webSettings.setDefaultTextEncodingName("utf-8");
         webview.setWebChromeClient(new WebChromeClient());
         webview.loadUrl("file:///android_asset/html/scatter_plot.html");
-        webview.setWebViewClient(new WebViewClient() {
+        loadGraph();
+        checkRun = findViewById(R.id.checkBox1);
+        checkWalk = findViewById(R.id.checkBox2);
+        checkEat = findViewById(R.id.checkBox3);
+        checkRun.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onPageFinished(WebView view, String url) {
-                callJS(webview);
+            public void onClick(View v) {
+                callJS();
+            }
+        });
+        checkWalk.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                callJS();
+            }
+        });
+        checkEat.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                callJS();
             }
         });
     }
 
-    private void callJS(WebView webview) {
+    private void loadGraph() {
+        webview.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                callJS();
+                TextView messageText = findViewById(R.id.messageText);
+                messageText.setVisibility(View.GONE);
+            }
+        });
+    }
+
+    private void callJS() {
         getDataFromDatabase();
-        String runningtext = Arrays.deepToString(runningArray);
-        String walkingtext = Arrays.deepToString(walkingArray);
-        String eatingtext = Arrays.deepToString(eatingArray);
+        boolean run = checkRun.isChecked();
+        boolean walk = checkWalk.isChecked();
+        boolean eat = checkEat.isChecked();
+        String runningtext = (run ? Arrays.deepToString(runningArray) : "''");
+        String walkingtext = (walk ? Arrays.deepToString(walkingArray) : "''");
+        String eatingtext = (eat ? Arrays.deepToString(eatingArray) : "''");
         webview.loadUrl("javascript:showGraph(" + runningtext + ", " + walkingtext + ", " +
                 eatingtext + ")");
     }
@@ -101,6 +135,7 @@ public class WebviewActivity extends AppCompatActivity {
                     }
                 } while (cursor.moveToNext());
             }
+            // check eat, walk, run values - should be 1000
         } catch (Exception e) {
             Log.d("WebviewActivity",e.getMessage());
         } finally {

@@ -7,6 +7,20 @@
     android:orientation="vertical"
     tools:context="com.example.ravikiran357.mc_assignment3.MainActivity">
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_margin="4dp">
+        <Button
+            android:id="@+id/data_gather"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="Collect New Data"
+            android:layout_marginBottom="5dp" />
+    </LinearLayout>
+
     <Button
         android:id="@+id/train"
         android:layout_width="wrap_content"
@@ -58,29 +72,5 @@
         android:layout_height="wrap_content"
         android:layout_margin="5dp"
         android:layout_gravity="center"
-        android:text="Reset data"/>
-
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_margin="4dp">
-        <Button
-            android:id="@+id/data_gather"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top"
-            android:text="Collect Data"
-            android:layout_above="@+id/textView2"
-            android:layout_centerHorizontal="true" />
-
-        <TextView
-            android:id="@+id/textView2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:layout_centerHorizontal="true"
-            android:layout_marginBottom="5dp"
-            android:gravity="center"
-            android:text="Re-calibrating will delete the previously created database and you will have to perform all acitivities again to retrain it. PROCEED WITH CAUTION" />
-    </RelativeLayout>
+        android:text="Use sample database"/>
 </LinearLayout>

@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
@@ -21,8 +22,8 @@ import java.util.ArrayList;
 public class DBManager extends AppCompatActivity {
 
     SQLiteDatabase db;
-    public String TABLE = "training";
-    public String label_activity = "eating";
+    public String label_activity = "";
+    public static String TABLE = "training";
     public static final String DATABASE_NAME = "group11";
     public static final String FILE_PATH = Environment.getExternalStorageDirectory() +
             File.separator + "Android/Data/CSE535_ASSIGNMENT3";
@@ -40,7 +41,7 @@ public class DBManager extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_calibration);
+        setContentView(R.layout.activity_data_collect);
 
         try{
             File folder = new File(FILE_PATH);
@@ -49,8 +50,7 @@ public class DBManager extends AppCompatActivity {
             }
             createDBTable(DATABASE_LOCATION, TABLE);
         } catch (SQLException e){
-            Toast.makeText(DBManager.this, e.getMessage(), Toast.LENGTH_LONG).show();
-            Log.d("exp",e.getMessage() );
+            Log.d("exp:DBManager",e.getMessage() );
         }
     }
 
@@ -63,12 +63,28 @@ public class DBManager extends AppCompatActivity {
         }
     }
 
+    public static boolean doesTableExist() {
+        File databaseFile = new File(DBManager.DATABASE_LOCATION);
+        if(databaseFile.exists()) {
+            SQLiteDatabase dbHandler = SQLiteDatabase.openOrCreateDatabase(DATABASE_LOCATION, null);
+            Cursor cursor = dbHandler.rawQuery("select DISTINCT tbl_name from sqlite_master " +
+                    "where tbl_name = '" + DBManager.TABLE + "'", null);
+            if (cursor != null) {
+                if (cursor.getCount() > 0) {
+                    cursor.close();
+                    return true;
+                }
+                cursor.close();
+            }
+        }
+        return false;
+    }
+
     public void createDBTable(String DATABASE_LOCATION, String TABLE){
         db = SQLiteDatabase.openOrCreateDatabase(DATABASE_LOCATION, null);
         db.beginTransaction();
-        db.execSQL("DROP TABLE " + TABLE);
-        Toast.makeText(DBManager.this,
-                "Press label_activity button to start calibrating Database",
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE);
+        Toast.makeText(DBManager.this, "Press any button to start collecting data",
                 Toast.LENGTH_LONG).show();
 
         StringBuilder createQuery;
@@ -149,12 +165,12 @@ public class DBManager extends AppCompatActivity {
                 insertQuery += " );";
                 db.execSQL(insertQuery);
                 counter = counter + 1;
+                Toast.makeText(DBManager.this, Integer.toString(counter),
+                        Toast.LENGTH_SHORT).show();
                 if(counter == 20) {
                     counter = 0;
                     enableButtons();
                 }
-                Toast.makeText(DBManager.this, Integer.toString(counter),
-                        Toast.LENGTH_SHORT).show();
             }
             catch (SQLiteException e) {
                 Log.d("DBManager", e.getMessage());

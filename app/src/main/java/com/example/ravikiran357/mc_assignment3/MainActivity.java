@@ -2,8 +2,10 @@ package com.example.ravikiran357.mc_assignment3;
 
 import android.Manifest;
 import android.annotation.TargetApi;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
@@ -50,14 +52,6 @@ public class MainActivity extends AppCompatActivity {
         } else {
             setupModules();
         }
-        File databaseFile = this.getDatabasePath(DBManager.DATABASE_LOCATION);
-        if(!databaseFile.exists()) {
-            try {
-                copyAssets();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     @TargetApi(Build.VERSION_CODES.M)
@@ -91,29 +85,56 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupModules() {
+        Button buttonCollect;
         Button buttonTrain;
         Button timeAndPowerButton;
-        Button buttonCalibrate;
         Button resetData;
 
-        buttonTrain = findViewById(R.id.train);
-        final TextView accuracyTextView = findViewById(R.id.accuracyTextView);
-        buttonTrain.setOnClickListener(new View.OnClickListener() {
+        buttonCollect = findViewById(R.id.data_gather);
+        buttonCollect.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // training and testing
-                SVM svm = new SVM();
-                LinkedList<String> Dataset = getDataFromDatabase();
-                writeToCSV(Dataset);
-                svm.trainAndTest(DBManager.TRAIN_DATA_LOCATION);
-                accuracyTextView.setText(String.valueOf(svm.currentAccuracy));
-                Intent intent = new Intent(MainActivity.this, WebviewActivity.class);
-                intent.putExtra("currentAccuracy", svm.currentAccuracy);
-                startActivity(intent);
+                new AlertDialog.Builder(MainActivity.this)
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .setTitle("Data collection")
+                .setMessage("Any previously collected data will be lost. Are you sure?")
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int choice) {
+                        Intent i = new Intent(MainActivity.this, DBManager.class);
+                        startActivity(i);
+                    }
+
+                })
+                .setNegativeButton("No", null)
+                .show();
             }
         });
-
+        buttonTrain = findViewById(R.id.train);
         timeAndPowerButton = findViewById(R.id.timeAndPowerButton);
+        final TextView accuracyTextView = findViewById(R.id.accuracyTextView);
+        if(DBManager.doesTableExist()) {
+            buttonTrain.setEnabled(true);
+            timeAndPowerButton.setEnabled(true);
+            buttonTrain.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    // training and testing
+                    SVM svm = new SVM();
+                    LinkedList<String> Dataset = getDataFromDatabase();
+                    writeToCSV(Dataset);
+                    svm.trainAndTest(DBManager.TRAIN_DATA_LOCATION);
+                    accuracyTextView.setText(String.valueOf(svm.currentAccuracy));
+                    Intent intent = new Intent(MainActivity.this, WebviewActivity.class);
+                    intent.putExtra("currentAccuracy", svm.currentAccuracy);
+                    startActivity(intent);
+                }
+            });
+        } else {
+            buttonTrain.setEnabled(false);
+            timeAndPowerButton.setEnabled(false);
+        }
+
         timeAndPowerButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -122,22 +143,22 @@ public class MainActivity extends AppCompatActivity {
                 timePowerAsyncTask.execute();
             }
         });
-
-
-        buttonCalibrate = findViewById(R.id.data_gather);
-        buttonCalibrate.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent i = new Intent(MainActivity.this, DBManager.class);
-                startActivity(i);
-            }
-        });
-
         resetData = findViewById(R.id.resetToOriginaldatabaseButton);
         resetData.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                copyAssets();
+                new AlertDialog.Builder(MainActivity.this)
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .setTitle("Using sample data")
+                .setMessage("Any previously collected data will be lost. Are you sure?")
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int choice) {
+                        copyAssets();
+                    }
+                })
+                .setNegativeButton("No", null)
+                .show();
             }
         });
     }
@@ -194,16 +215,15 @@ public class MainActivity extends AppCompatActivity {
         walkingArray = new String[50][20];
         runningArray = new String[50][20];
         eatingArray = new String[50][20];
-
         db = SQLiteDatabase.openOrCreateDatabase(DBManager.DATABASE_LOCATION, null);
         db.beginTransaction();
         String query = "SELECT  * FROM training;";
         Cursor cursor = null;
-        LinkedList<String> Dataset = null;
+        LinkedList<String> dataList = null;
         try {
             cursor = db.rawQuery(query, null);
             db.setTransactionSuccessful(); //commit your changes
-            Dataset = new LinkedList<String>();
+            dataList = new LinkedList<String>();
             if (cursor.moveToFirst()) {
                 do {
                     StringBuilder stringBuilder = new StringBuilder();
@@ -223,7 +243,7 @@ public class MainActivity extends AppCompatActivity {
                             stringBuilder.append("3\n"); //do not remove new line
                             break;
                     }
-                    Dataset.add(stringBuilder.toString());
+                    dataList.add(stringBuilder.toString());
                 } while (cursor.moveToNext());
             }
         } catch (Exception e) {
@@ -233,7 +253,7 @@ public class MainActivity extends AppCompatActivity {
                 cursor.close();
         }
         db.endTransaction();
-        return Dataset;
+        return dataList;
     }
 
     public void writeToCSV(LinkedList<String> Dataset) {
@@ -294,7 +314,8 @@ public class MainActivity extends AppCompatActivity {
                     powerUsed = endBattery - startBattery;
                     if (powerUsed < 0)
                         powerUsed = powerUsed * (-1); //taking absolute value
-                    Log.d("time and battery used: ", (endTime - startTime) + " " + powerUsed);
+                    Log.d("time and battery used: ", (endTime - startTime) + " " +
+                            powerUsed);
                 /*
                  * BATTERY_PROPERTY_CHARGE_COUNTER of BatteryManager does not work smoothly for all
                  * APIs also, it depends on the hardware interrupt of the battery change, thus its
