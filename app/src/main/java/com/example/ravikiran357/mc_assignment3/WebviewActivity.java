@@ -86,9 +86,9 @@ public class WebviewActivity extends AppCompatActivity {
         boolean run = checkRun.isChecked();
         boolean walk = checkWalk.isChecked();
         boolean eat = checkEat.isChecked();
-        String runningtext = (run ? Arrays.deepToString(runningArray) : "''");
-        String walkingtext = (walk ? Arrays.deepToString(walkingArray) : "''");
-        String eatingtext = (eat ? Arrays.deepToString(eatingArray) : "''");
+        String runningtext = (run ? Arrays.deepToString(runningArray) : "[]");
+        String walkingtext = (walk ? Arrays.deepToString(walkingArray) : "[]");
+        String eatingtext = (eat ? Arrays.deepToString(eatingArray) : "[]");
         webview.loadUrl("javascript:showGraph(" + runningtext + ", " + walkingtext + ", " +
                 eatingtext + ")");
     }
@@ -135,7 +135,6 @@ public class WebviewActivity extends AppCompatActivity {
                     }
                 } while (cursor.moveToNext());
             }
-            // check eat, walk, run values - should be 1000
         } catch (Exception e) {
             Log.d("WebviewActivity",e.getMessage());
         } finally {
