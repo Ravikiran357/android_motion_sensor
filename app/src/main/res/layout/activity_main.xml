@@ -41,7 +41,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:gravity="center">
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -62,9 +63,9 @@
         android:id="@+id/timeAndPowerButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="5dp"
         android:layout_gravity="center"
-        android:text="Time and Power Consumption"/>
+        android:layout_margin="50dp"
+        android:text="Time and Power Consumption" />
 
     <Button
         android:id="@+id/resetToOriginaldatabaseButton"

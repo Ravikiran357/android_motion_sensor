@@ -28,4 +28,5 @@ dependencies {
     implementation project(':ajt-2.11')
     implementation project(':javaml-0.1.7')
     implementation project(':libsvm')
+    compile 'com.google.code.gson:gson:2.8.1'
 }

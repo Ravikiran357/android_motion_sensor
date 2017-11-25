@@ -23,6 +23,9 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.jjoe64.graphview.series.DataPoint;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -57,13 +60,11 @@ public class MainActivity extends AppCompatActivity {
     @TargetApi(Build.VERSION_CODES.M)
     private void getPermissions() {
         int permissionCheck1 = this.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        int permissionCheck2 = this.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION);
-        if (permissionCheck1 == PackageManager.PERMISSION_GRANTED &&
-                (permissionCheck2 == PackageManager.PERMISSION_GRANTED)) {
+        if (permissionCheck1 == PackageManager.PERMISSION_GRANTED ) {
             setupModules();
         } else {
-            requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                    Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_STORAGE);
+            requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    PERMISSION_STORAGE);
         }
     }
 
@@ -84,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void setupModules() {
         Button buttonCollect;
         Button buttonTrain;
@@ -104,7 +106,6 @@ public class MainActivity extends AppCompatActivity {
                         Intent i = new Intent(MainActivity.this, DBManager.class);
                         startActivity(i);
                     }
-
                 })
                 .setNegativeButton("No", null)
                 .show();
@@ -120,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     // training and testing
-                    SVM svm = new SVM();
+                    SVMClassifier svm = new SVMClassifier();
                     LinkedList<String> Dataset = getDataFromDatabase();
                     writeToCSV(Dataset);
                     svm.trainAndTest(DBManager.TRAIN_DATA_LOCATION);
@@ -217,7 +218,7 @@ public class MainActivity extends AppCompatActivity {
         eatingArray = new String[50][20];
         db = SQLiteDatabase.openOrCreateDatabase(DBManager.DATABASE_LOCATION, null);
         db.beginTransaction();
-        String query = "SELECT  * FROM training;";
+        String query = "SELECT  * FROM " + DBManager.TABLE + ";";
         Cursor cursor = null;
         LinkedList<String> dataList = null;
         try {
@@ -274,6 +275,13 @@ public class MainActivity extends AppCompatActivity {
 
     private class TimePowerAsyncTask extends AsyncTask<String, String, String> {
         ProgressDialog progressDialog;
+        int COUNT = 5;
+        DataPoint [] trainUsed = new DataPoint[COUNT];
+        DataPoint [] testUsed = new DataPoint[COUNT];
+        long maxTrainX = 0;
+        long maxTrainY = 0;
+        long maxTestX = 0;
+        long maxTestY = 0;
 
         @Override
         protected void onPreExecute() {
@@ -281,57 +289,38 @@ public class MainActivity extends AppCompatActivity {
                     "Please wait");
         }
 
-        @TargetApi(Build.VERSION_CODES.LOLLIPOP)
         @Override
         protected String doInBackground(String... strings) {
             LinkedList<String> Dataset = getDataFromDatabase();
             writeToCSV(Dataset);
-
             //start time and battery profiling here
             // referred from: https://source.android.com/devices/tech/power/device
-            BatteryManager mBatteryManager = (BatteryManager)
-                    getSystemService(Context.BATTERY_SERVICE);
-            long startBattery = 0;
-            powerUsed = 0;
-            try {
-                for (int j = 0; j < 20; j++) {
-                    // the remaining battery capacity in microampere-hours
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP)
-                        startBattery = mBatteryManager.getLongProperty(
-                                BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
-                    long startTime = System.currentTimeMillis();
-                    //training and testing:
-                    SVM svm = new SVM();
-                    svm.trainAndTest(DBManager.TRAIN_DATA_LOCATION);
-                    //end time and battery profiling now
-                    long endBattery = 0;
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP)
-                        endBattery = mBatteryManager.getLongProperty(
-                                BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
-                    long endTime = System.currentTimeMillis();
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                try {
+                    long trainStartTime = System.currentTimeMillis();
+                    long testStartTime = System.currentTimeMillis();
+                    BatteryManager mBatteryManager = (BatteryManager) getSystemService(Context.BATTERY_SERVICE);
+                    long trainStartBattery = mBatteryManager.getLongProperty(
+                            BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
+                    long testStartBattery = mBatteryManager.getLongProperty(
+                            BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
 
-                    timeUsed = endTime - startTime;
-                    powerUsed = endBattery - startBattery;
-                    if (powerUsed < 0)
-                        powerUsed = powerUsed * (-1); //taking absolute value
-                    Log.d("time and battery used: ", (endTime - startTime) + " " +
-                            powerUsed);
-                /*
-                 * BATTERY_PROPERTY_CHARGE_COUNTER of BatteryManager does not work smoothly for all
-                 * APIs also, it depends on the hardware interrupt of the battery change, thus its
-                 * sampling frequency varies
-                 *
-                 * Hence, we carried out repeated experiments using BATTERY_PROPERTY_CHARGE_COUNTER
-                 * of BatteryManager and averaged out a value of 113 microAmpere-Hour power
-                 * consumption
-                 */
-                    if (powerUsed == 0)
-                        powerUsed = 113;
-                    if (powerUsed > 0)
-                        break;
+                    for (int j = 0; j < COUNT; j++) {
+                        //training and testing:
+                        SVMClassifier svm = new SVMClassifier();
+                        DataPoint[] trainAndTestPoints = svm.trainAndTest(mBatteryManager,
+                                DBManager.TRAIN_DATA_LOCATION, trainStartBattery, testStartBattery,
+                                trainStartTime, testStartTime);
+                        trainUsed[j] = trainAndTestPoints[0];
+                        testUsed[j] = trainAndTestPoints[1];
+                        maxTrainX = Math.max(maxTrainX, (long) trainUsed[j].getX());
+                        maxTrainY = Math.max(maxTrainY,(long) trainUsed[j].getY());
+                        maxTestX = Math.max(maxTestX, (long) testUsed[j].getX());
+                        maxTestY = Math.max(maxTestY, (long) testUsed[j].getY());
+                    }
+                } catch (Exception e) {
+                    Log.d("TimePower", e.getMessage());
                 }
-            } catch (Exception e) {
-                Log.d("TimePower", e.getMessage());
             }
             return null;
         }
@@ -340,8 +329,12 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(String s) {
             progressDialog.dismiss();
             Intent intent = new Intent(MainActivity.this, TimePowerActivity.class);
-            intent.putExtra("timeUsed", timeUsed);
-            intent.putExtra("powerUsed", powerUsed);
+            intent.putExtra("trainUsed", new Gson().toJson(trainUsed));
+            intent.putExtra("testUsed", new Gson().toJson(testUsed));
+            intent.putExtra("mTX", new Gson().toJson(maxTrainX));
+            intent.putExtra("mTY", new Gson().toJson(maxTrainY));
+            intent.putExtra("mTeX", new Gson().toJson(maxTestX));
+            intent.putExtra("mTeY", new Gson().toJson(maxTestY));
             startActivity(intent);
         }
     }

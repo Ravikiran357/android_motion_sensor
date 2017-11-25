@@ -63,7 +63,8 @@ public class AccelerometerService extends Service implements SensorEventListener
         valueList.add(values[2]);
         count += 1;
 
-        if(count == 50) {//original it should be 50
+        // Accumulating till 50 data points along X,Y,Z axis
+        if(count == 50) {
             count = 0;
             Intent intent = new Intent();
             intent.setAction(INTENT_ACCELEROMETER_ACTION);

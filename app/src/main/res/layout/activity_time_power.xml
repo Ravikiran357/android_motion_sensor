@@ -7,34 +7,33 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="X-axis: Execution Time in milliseconds\nY-axis: Power Consumption in microampere-hours"/>
+        android:text="X-axis: Execution Time in seconds\nY-axis: Power Consumption in microampere-hours"/>
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:text="Training"
         android:gravity="center"
         android:textColor="#000000"
-        android:layout_marginTop="8dp"
-        android:text="On mobile"/>
+        android:layout_margin="8dp"/>
 
-    <!--referred from: https://github.com/appsthatmatter/GraphView-->
     <com.jjoe64.graphview.GraphView
         android:layout_width="match_parent"
         android:layout_height="200dip"
-        android:id="@+id/mobileGraph" />
+        android:id="@+id/trainingGraph" />
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:text="Testing"
         android:gravity="center"
         android:textColor="#000000"
-        android:layout_marginTop="8dp"
-        android:text="On server"/>
+        android:layout_margin="8dp"/>
 
-    <!--referred from: https://github.com/appsthatmatter/GraphView-->
     <com.jjoe64.graphview.GraphView
         android:layout_width="match_parent"
         android:layout_height="200dip"
-        android:id="@+id/serverGraph" />
+        android:id="@+id/testingGraph" />
 
 </LinearLayout>
+
