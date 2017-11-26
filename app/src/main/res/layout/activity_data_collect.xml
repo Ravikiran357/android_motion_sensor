@@ -41,12 +41,4 @@
         android:layout_alignStart="@+id/walk"
         android:id="@+id/eat" />
 
-    <TextView
-        android:id="@+id/textView3"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:textColor="#000000"
-        android:text="DO NOT PRESS BACK BUTTON !" />
 </RelativeLayout>

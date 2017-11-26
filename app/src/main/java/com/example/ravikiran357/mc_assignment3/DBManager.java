@@ -56,19 +56,20 @@ public class DBManager extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (db != null) {
+        if (db != null && db.isOpen()) {
             db.setTransactionSuccessful();
             db.endTransaction();
             db.close();
         }
+        Toast.makeText(DBManager.this, "Please complete the tasks!",
+                Toast.LENGTH_SHORT).show();
     }
 
     public static boolean doesTableExist() {
         File databaseFile = new File(DBManager.DATABASE_LOCATION);
         if(databaseFile.exists()) {
             SQLiteDatabase dbHandler = SQLiteDatabase.openOrCreateDatabase(DATABASE_LOCATION, null);
-            Cursor cursor = dbHandler.rawQuery("select DISTINCT tbl_name from sqlite_master " +
-                    "where tbl_name = '" + DBManager.TABLE + "'", null);
+            Cursor cursor = dbHandler.rawQuery("select * from " + DBManager.TABLE, null);
             if (cursor != null) {
                 if (cursor.getCount() > 0) {
                     cursor.close();
@@ -98,6 +99,9 @@ public class DBManager extends AppCompatActivity {
         }
         createQuery.append(");");
         db.execSQL(createQuery.toString());
+        db.setTransactionSuccessful();
+        db.endTransaction();
+        db.close();
 
         accelerometerReceiver = new AccelerometerReceiver();
         Intent intent = new Intent(DBManager.this, AccelerometerService.class);
@@ -163,6 +167,10 @@ public class DBManager extends AppCompatActivity {
                 }
                 insertQuery = insertQueryBuilder.toString();
                 insertQuery += " );";
+                if (!db.isOpen()) {
+                    db = SQLiteDatabase.openOrCreateDatabase(DATABASE_LOCATION, null);
+                    db.beginTransaction();
+                }
                 db.execSQL(insertQuery);
                 counter = counter + 1;
                 Toast.makeText(DBManager.this, Integer.toString(counter),
@@ -197,6 +205,7 @@ public class DBManager extends AppCompatActivity {
             db.close();
             Intent i = new Intent(DBManager.this, MainActivity.class);
             startActivity(i);
+            finish();
         }
         run.setEnabled(running);
         walk.setEnabled(walking);

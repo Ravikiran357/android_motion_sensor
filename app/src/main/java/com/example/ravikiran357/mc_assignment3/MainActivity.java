@@ -132,6 +132,8 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         } else {
+            Toast.makeText(this, "Database already deleted, please Collect New Data",
+                    Toast.LENGTH_LONG).show();
             buttonTrain.setEnabled(false);
             timeAndPowerButton.setEnabled(false);
         }
@@ -195,6 +197,10 @@ public class MainActivity extends AppCompatActivity {
                         while ((read = in.read(buffer)) != -1) {
                             out.write(buffer, 0, read);
                         }
+                        Button buttonTrain = findViewById(R.id.train);
+                        Button timeAndPowerButton = findViewById(R.id.timeAndPowerButton);
+                        buttonTrain.setEnabled(true);
+                        timeAndPowerButton.setEnabled(true);
                     } catch (IOException e) {
                         Log.e("Main:copyAssets:loop", filename + " " + e.getMessage());
                     } finally {
@@ -216,8 +222,14 @@ public class MainActivity extends AppCompatActivity {
         walkingArray = new String[50][20];
         runningArray = new String[50][20];
         eatingArray = new String[50][20];
-        db = SQLiteDatabase.openOrCreateDatabase(DBManager.DATABASE_LOCATION, null);
-        db.beginTransaction();
+        try {
+            db = SQLiteDatabase.openOrCreateDatabase(DBManager.DATABASE_LOCATION, null);
+            db.beginTransaction();
+        } catch (Exception e) {
+            Toast.makeText(this, "Database already deleted, please Collect New Data",
+                    Toast.LENGTH_LONG).show();
+            Log.d("M:getDataFromDatabase", e.getMessage());
+        }
         String query = "SELECT  * FROM " + DBManager.TABLE + ";";
         Cursor cursor = null;
         LinkedList<String> dataList = null;
@@ -253,7 +265,8 @@ public class MainActivity extends AppCompatActivity {
             if (cursor != null)
                 cursor.close();
         }
-        db.endTransaction();
+        if (db != null)
+            db.endTransaction();
         return dataList;
     }
 
